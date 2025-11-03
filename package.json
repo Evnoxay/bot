@@ -1,0 +1,20 @@
+{
+  "name": "discord-voice-bot",
+  "version": "1.0.0",
+  "description": "Bot Discord pour gérer des salons vocaux personnalisés",
+  "main": "bot/index.js",
+  "scripts": {
+    "start": "node bot/index.js",
+    "dev": "nodemon bot/index.js"
+  },
+  "keywords": ["discord", "bot", "voice"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
