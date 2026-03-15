@@ -1,20 +1,15 @@
-const fs = require('fs');
-const path = require('path');
-
-function hasCommandAccess(interaction, commandName) {
-  try {
-    const configPath = path.join(__dirname, '../data/serverConfig.json');
-    if (!fs.existsSync(configPath)) return false;
-    
-    const conf = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    const perms = conf[interaction.guildId]?.commandPermissions?.[commandName];
-    
-    if (!perms || perms.length === 0) return false;
-    
-    return perms.some(roleId => interaction.member.roles.cache.has(roleId));
-  } catch {
-    return false;
-  }
+function isSnowflake(value) {
+  return /^\d{6,25}$/.test(String(value || ''));
 }
 
-module.exports = { hasCommandAccess };
+function canControlVoice(member, voiceRecord) {
+  if (!member || !voiceRecord) return false;
+  if (member.id === voiceRecord.ownerId) return true;
+  if (voiceRecord.whitelist?.includes(member.id)) return true;
+  return member.permissions.has('Administrator');
+}
+
+module.exports = {
+  isSnowflake,
+  canControlVoice,
+};

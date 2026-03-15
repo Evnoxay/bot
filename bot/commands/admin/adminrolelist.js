@@ -1,58 +1,16 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const configManager = require('../../utils/configManager');
+const { SlashCommandBuilder } = require('discord.js');
+const { getGuildConfig } = require('../../utils/configManager');
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('adminrolelist')
-    .setDescription('Affiche la liste de tous les rôles configurés pour chaque commande'),
-
+  data: new SlashCommandBuilder().setName('adminrolelist').setDescription('Liste les rôles autorisés par commande'),
   async execute(interaction) {
-    const commands = ['clear', 'kick', 'ban', 'adminrole'];
-    
-    const fields = [];
-    let hasAnyPermissions = false;
-
-    for (const cmd of commands) {
-      const roleIds = configManager.getCommandPermissions(interaction.guildId, cmd);
-      
-      if (roleIds.length > 0) {
-        hasAnyPermissions = true;
-        const rolesList = roleIds.map(id => `<@&${id}>`).join(', ');
-        
-        const emoji = {
-          'clear': '🗑️',
-          'kick': '🚪',
-          'ban': '🔨',
-          'adminrole': '⚙️'
-        }[cmd] || '📌';
-
-        fields.push({
-          name: `${emoji} \`/${cmd}\``,
-          value: rolesList,
-          inline: false
-        });
-      }
+    const cfg = getGuildConfig(interaction.guild.id);
+    const perms = cfg.commandPermissions || {};
+    if (!Object.keys(perms).length) {
+      return interaction.reply({ content: 'Aucune permission personnalisée configurée.', ephemeral: true });
     }
 
-    if (!hasAnyPermissions) {
-      const embed = new EmbedBuilder()
-        .setColor('#FFA500')
-        .setTitle('📋 Liste des permissions')
-        .setDescription('Aucune permission configurée sur ce serveur')
-        .setFooter({ text: 'Utilise `/adminrole` pour configurer les permissions' })
-        .setTimestamp();
-
-      return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    const embed = new EmbedBuilder()
-      .setColor('#0099FF')
-      .setTitle('📋 Liste des permissions configurées')
-      .setDescription('Voici tous les rôles autorisés pour chaque commande')
-      .addFields(fields)
-      .setFooter({ text: 'Utilise `/adminrole` pour modifier les permissions' })
-      .setTimestamp();
-
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    const lines = Object.entries(perms).map(([cmd, roles]) => `• /${cmd} → ${roles.map((id) => `<@&${id}>`).join(', ') || 'Aucun'}`);
+    return interaction.reply({ content: lines.join('\n'), ephemeral: true });
   },
 };
