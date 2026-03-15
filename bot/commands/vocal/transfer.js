@@ -1,68 +1,19 @@
 const { SlashCommandBuilder } = require('discord.js');
-const permissionManager = require('../../../features/permissionManager');
-const { createSuccessEmbed, createErrorEmbed } = require('../../../bot/utils/embedBuilder');
-const { checkVoiceCommand, getUserFromOptions, checkUserInChannel } = require('../../../bot/utils/voiceHelpers');
+const { getManagedFromInteraction } = require('./_shared');
+const { persistManaged } = require('../../utils/voiceChannelManager');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('transfer')
-    .setDescription('Transférer la propriété du salon à un autre utilisateur')
-    .addUserOption(option =>
-      option.setName('utilisateur')
-        .setDescription("L'utilisateur qui aura la propriété")
-        .setRequired(false)
-    )
-    .addStringOption(option =>
-      option.setName('id')
-        .setDescription("L'ID de l'utilisateur qui aura la propriété")
-        .setRequired(false)
-    ),
-
+    .setDescription('Transfère la propriété du salon')
+    .addStringOption((o) => o.setName('utilisateur').setDescription('Mention ou ID').setRequired(true)),
   async execute(interaction) {
-    // Vérifications vocales
-    const { error: voiceError, channel } = checkVoiceCommand(interaction);
-    if (voiceError) {
-      return interaction.reply({ embeds: [voiceError], flags: 64 });
-    }
-
-    // Récupérer l'utilisateur
-    const { error: userError, user: newOwner } = await getUserFromOptions(interaction);
-    if (userError) {
-      return interaction.reply({ embeds: [userError], flags: 64 });
-    }
-
-    // Vérifier que le nouvel owner est dans le salon
-    const { error: channelError } = checkUserInChannel(interaction, newOwner, channel);
-    if (channelError) {
-      return interaction.reply({ embeds: [channelError], flags: 64 });
-    }
-
-    try {
-      // Transférer la propriété
-      permissionManager.transferOwnership(channel.id, newOwner.id);
-      
-      // Mettre à jour les permissions
-      await channel.permissionOverwrites.set([
-        {
-          id: interaction.guild.id,
-          allow: ['Connect'],
-        },
-        {
-          id: newOwner.id,
-          allow: ['Connect', 'Speak'],
-        },
-      ]);
-
-      return interaction.reply({
-        embeds: [createSuccessEmbed(`La propriété a été transférée à ${newOwner.username}!`)],
-        flags: 64
-      });
-    } catch (error) {
-      console.error('Erreur transfer:', error);
-      return interaction.reply({
-        embeds: [createErrorEmbed('Erreur lors du transfert!')],
-        flags: 64
-      });
-    }
+    const res = getManagedFromInteraction(interaction);
+    if (res.error) return interaction.reply({ content: res.error, ephemeral: true });
+    const targetId = interaction.options.getString('utilisateur', true).replace(/\D/g, '');
+    if (!res.channel.members.has(targetId)) return interaction.reply({ content: 'Le membre doit être dans le salon.', ephemeral: true });
+    res.record.ownerId = targetId;
+    persistManaged(interaction.guild.id, res.channel.id, res.record);
+    return interaction.reply({ content: `👑 Propriété transférée <@${targetId}>.`, ephemeral: true });
   },
 };

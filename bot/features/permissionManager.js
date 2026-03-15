@@ -1,18 +1,24 @@
-const fs = require('fs');
-const path = require('path');
+const { getGuildConfig, setGuildConfig } = require('../utils/configManager');
 
-const configFile = path.join(__dirname, '../data/serverConfig.json');
-
-function hasCommandAccess(interaction, commandName) {
-  try {
-    if (!fs.existsSync(configFile)) return false;
-    const conf = JSON.parse(fs.readFileSync(configFile, 'utf8'));
-    const perms = conf[interaction.guildId]?.commandPermissions?.[commandName];
-    if (!perms || perms.length === 0) return false;
-    return perms.some(roleId => interaction.member.roles.cache.has(roleId));
-  } catch {
-    return false;
-  }
+function getAllowedRoles(guildId, commandName) {
+  const cfg = getGuildConfig(guildId);
+  return cfg.commandPermissions?.[commandName] || [];
 }
 
-module.exports = { hasCommandAccess };
+function setAllowedRoles(guildId, commandName, roleIds) {
+  return setGuildConfig(guildId, (cfg) => {
+    cfg.commandPermissions = cfg.commandPermissions || {};
+    cfg.commandPermissions[commandName] = roleIds;
+    return cfg;
+  });
+}
+
+function hasCommandAccess(member, commandName) {
+  if (!member) return false;
+  if (member.permissions.has('Administrator')) return true;
+  const allowed = getAllowedRoles(member.guild.id, commandName);
+  if (!allowed.length) return true;
+  return member.roles.cache.some((r) => allowed.includes(r.id));
+}
+
+module.exports = { getAllowedRoles, setAllowedRoles, hasCommandAccess };

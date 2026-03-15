@@ -1,20 +1,25 @@
 {
-  "name": "discord-voice-bot",
+  "name": "darwinbot",
   "version": "1.0.0",
-  "description": "Bot Discord pour gérer des salons vocaux personnalisés",
+  "description": "Bot Discord de gestion automatique de salons vocaux temporaires",
   "main": "bot/index.js",
   "scripts": {
     "start": "node bot/index.js",
-    "dev": "nodemon bot/index.js"
+    "dev": "nodemon bot/index.js",
+    "setup": "node bot/setup/server.js",
+    "doctor": "node bot/setup/doctor.js",
+    "verify": "node bot/setup/verify.js"
   },
-  "keywords": ["discord", "bot", "voice"],
-  "author": "",
+  "keywords": ["discord", "bot", "voice", "darwinbot"],
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "discord.js": "^14.14.0",
-    "dotenv": "^16.3.1"
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.0"
   }
 }
